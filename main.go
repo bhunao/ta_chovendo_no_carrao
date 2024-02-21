@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"html/template"
+	"io"
 	"net/http"
 	"os"
 )
 
-
 var tpl = template.Must(template.ParseFiles("index.html"))
+
 type ViewData struct {
 	Message string
 }
@@ -28,40 +28,35 @@ func parseJSON(jsonString string) (map[string]interface{}, error) {
 	return data, nil
 }
 
-func get_weather() (string, error) {
-    // Define the URL
-    url := "http://dataservice.accuweather.com/currentconditions/v1/36302?apikey=RCwn2dVmR7RtmGGeRKfjIrzAAozQp70w&language=pt-br"
+func get_weather(url string) (string, error) {
+	// Make GET request
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error making GET request:", err)
+		return "", err
+	}
+	defer resp.Body.Close()
 
-    // Make GET request
-    resp, err := http.Get(url)
-    if err != nil {
-        fmt.Println("Error making GET request:", err)
-        return "", err
-    }
-    defer resp.Body.Close()
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return "", err
+	}
 
-    // Read response body
-    body, err  := io.ReadAll(resp.Body)
-    if err != nil {
-        fmt.Println("Error reading response body:", err)
-        return "", err
-    }
-
-    // Print response body
+	// Print response body
 	coiso, err := parseJSON(string(body))
 	if err != nil {
-        fmt.Println("Error parsing json body:", err)
+		fmt.Println("Error parsing json body:", err)
 		return "", err
 	}
 	fmt.Println(coiso)
-    fmt.Println(string(body))
+	fmt.Println(string(body))
 	return string(body), nil
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	err, d := get_weather()
-	// data := "talvez"
-	data := map[string]string{"algo": "talvez"}
+	data := ViewData{Message: "TA SOL"}
 	tpl.Execute(w, data)
 }
 
@@ -72,6 +67,10 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+	mux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("js"))))
+	mux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
+	mux.Handle("/assets/img/", http.StripPrefix("/assets/img/", http.FileServer(http.Dir("assets/img"))))
+
 
 	mux.HandleFunc("/", indexHandler)
 	http.ListenAndServe(":"+port, mux)
