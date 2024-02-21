@@ -73,5 +73,5 @@ func main() {
 
 
 	mux.HandleFunc("/", indexHandler)
-	http.ListenAndServe(":"+port, mux)
+	http.ListenAndServe("0.0.0.0:"+port, mux)
 }
